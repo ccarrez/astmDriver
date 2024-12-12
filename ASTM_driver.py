@@ -92,4 +92,4 @@ def handle_client(client_socket):
         print("Client connection closed")
 
 if __name__ == "__main__":
-    start_server('148.196.146.237', 3121)
+    start_server('localhost', 3121)
