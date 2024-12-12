@@ -38,6 +38,36 @@ def cleanStr(data):
             output += data[i]
     return output.replace(EXT5B,'').replace(ETB37,'').replace(ENQ,'').replace(ACK,'').replace(ETB,'').replace(ETX,'').replace(EOT,'').rstrip()
 
+# in our case, the analyzer sends multiple messages in one transmission
+# so we split the messages into separate files _{count}
+# and re-use the initial header H|...
+def export(content):
+    current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"results_{current_datetime}.astm"
+    headerRow=""
+    count=0
+    lines = content.splitlines()
+    output=""
+    for line in lines:
+        line=line.strip()
+        if line.startswith("H|"):
+            headerRow=line
+        if line.startswith("P|"):
+            if(count>0):
+                filename = f"results_{current_datetime}_{count}.astm"
+                saveToFile(filename, output)
+                output=headerRow+CR
+            count+=1
+        if "|" in line:
+            output+=line+CR
+    filename = f"results_{current_datetime}_{count}.astm"
+    saveToFile(filename, output)
+    
+def saveToFile(filename, content):
+    f = open(filename, "a") #append
+    f.write(content)
+    f.close()
+
 def handle_astm_message(message):
     # return an ACK
     if(message != EOT):
@@ -76,11 +106,7 @@ def handle_client(client_socket):
                     count += 1
             else:
                 if count > 2:
-                    current_datetime = datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filename = f"SYNERGY_results_{current_datetime}.astm"
-                    f = open(filename, "a") #append
-                    f.write(content)
-                    f.close()
+                    export(content)
                 content = ""
                 count = 0
     except ConnectionResetError:
